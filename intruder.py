@@ -25,13 +25,13 @@ from rich.text import Text
 # ─── CONFIG ───────────────────────────────────────────────────────────────────
 
 MODELS = [
-    {"id": "llama3:8b",                     "name": "Llama3-8B",         "company": "Meta",          "color": "blue"},
+    {"id": "kimi-k2-thinking:cloud",        "name": "KimiK2",            "company": "MoonlightAI",   "color": "blue"},
     {"id": "gpt-oss:120b-cloud",            "name": "GPToss-120B",       "company": "OpenAI",        "color": "green"},
     {"id": "nemotron-3-super:cloud",        "name": "Nemotron3-120B",    "company": "NVIDIA",        "color": "red"},
-    {"id": "gemini-3-flash-preview:cloud",  "name": "Gemini3",           "company": "Google",        "color": "bright_magenta"},
+    {"id": "deepseek-v3.1:671b-cloud",      "name": "DeepSeek3.1",       "company": "DeepSeek",      "color": "bright_magenta"},
     {"id": "qwen3-next:80b-cloud",          "name": "Qwen3-80B",         "company": "Alibaba",       "color": "brown"},
-    {"id": "ministral-3:14b-cloud",         "name": "Ministral3-14B",    "company": "MistralAI",    "color": "yellow"},
-    {"id": "gemma3:27b-cloud",              "name": "Gemma3-27B",        "company": "Google",        "color": "bright_blue"},
+    {"id": "ministral-3:14b-cloud",         "name": "Ministral3-14B",    "company": "MistralAI",     "color": "yellow"},
+    {"id": "gemma3:27b-cloud",              "name": "Gemma3-27B",        "company": "Google",        "color": "magenta"},
 ]
 
 OLLAMA_URL  = "http://localhost:11434/v1"

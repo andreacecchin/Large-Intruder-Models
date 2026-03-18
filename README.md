@@ -46,16 +46,16 @@ ollama signin
 The game uses 7 defeault models, their Ollama interface can be setup with:
 
 ```bash
-ollama pull llama3:8b
+ollama pull kimi-k2-thinking:cloud
 ollama pull gpt-oss:120b-cloud
 ollama pull nemotron-3-super:cloud
-ollama pull gemini-3-flash-preview:cloud
+ollama pull deepseek-v3.1:671b-cloud
 ollama pull qwen3-next:80b-cloud
 ollama pull ministral-3:14b-cloud
 ollama pull gemma3:27b-cloud
 ```
 
-The size of the only local model llama3:8b is 4.7GB, other interfaces require <1MB.
+The size of all interfaces are <1MB.
 
 ## 3. Install Python dependencies
 
@@ -76,18 +76,17 @@ Settings can be changed in the first lines of intruder.py
 ```python
 # ─── CONFIG ───────────────────────────────────────────────────────────────────
 
-# to use different models, remember to download them using ollama
+# to use different models, remember first to download their interface using ollama pull command
 MODELS = [
-    {"id": "llama3:8b",                     "name": "Llama3-8B",         "company": "Meta",          "color": "blue"},
+    {"id": "kimi-k2-thinking:cloud",        "name": "KimiK2",            "company": "MoonlightAI",   "color": "blue"},
     {"id": "gpt-oss:120b-cloud",            "name": "GPToss-120B",       "company": "OpenAI",        "color": "green"},
     {"id": "nemotron-3-super:cloud",        "name": "Nemotron3-120B",    "company": "NVIDIA",        "color": "red"},
-    {"id": "gemini-3-flash-preview:cloud",  "name": "Gemini3",           "company": "Google",        "color": "bright_magenta"},
+    {"id": "deepseek-v3.1:671b-cloud",      "name": "DeepSeek3.1",       "company": "DeepSeek",      "color": "bright_magenta"},
     {"id": "qwen3-next:80b-cloud",          "name": "Qwen3-80B",         "company": "Alibaba",       "color": "brown"},
-    {"id": "ministral-3:14b-cloud",         "name": "Ministral3-14B",    "company": "MistralAI",    "color": "yellow"},
-    {"id": "gemma3:27b-cloud",              "name": "Gemma3-27B",        "company": "Google",        "color": "bright_blue"},
+    {"id": "ministral-3:14b-cloud",         "name": "Ministral3-14B",    "company": "MistralAI",     "color": "yellow"},
+    {"id": "gemma3:27b-cloud",              "name": "Gemma3-27B",        "company": "Google",        "color": "magenta"},
 ]
 
-OLLAMA_URL  = "http://localhost:11434/v1"
 MAX_ROUNDS  = 3 # how many attempts the group have to identify the intruder
 ```
 
@@ -101,7 +100,11 @@ You will be prompted to enter two words:
 - **Majority word**: given to 6 players
 - **Intruder word**: given to 1 secret player
 
-## Example word pairs
+### Ollama cloud models limit
+
+Remember to check your Ollama cloud usage (free account are based on limited cloud usage) in your profile. 
+
+### Example word pairs
 
 | Majority word | Intruder word |
 |---------------|---------------|
@@ -112,4 +115,4 @@ You will be prompted to enter two words:
 | summer        | winter        |
 | library       | museum        |
 
-After each game, the entire conversation with every model will be available in log.txt file.
+After each game, the entire conversation with every model reasoning will be available in log.txt file.
