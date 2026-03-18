@@ -26,12 +26,12 @@ from rich.text import Text
 
 MODELS = [
     {"id": "llama3:8b",                     "name": "Llama3-8B",         "company": "Meta",          "color": "blue"},
-    {"id": "gpt-oss:20b-cloud",             "name": "GPToss-20B",        "company": "OpenAI",        "color": "green"},
-    {"id": "cogito:8b",                     "name": "Cogito-8B",         "company": "Deep Cogito",   "color": "red"},
+    {"id": "gpt-oss:120b-cloud",            "name": "GPToss-120B",       "company": "OpenAI",        "color": "green"},
+    {"id": "nemotron-3-super:cloud",        "name": "Nemotron3-120B",    "company": "NVIDIA",        "color": "red"},
     {"id": "gemini-3-flash-preview:cloud",  "name": "Gemini3",           "company": "Google",        "color": "bright_magenta"},
-    {"id": "qwen3-next:80b-cloud",          "name": "Qwen3-80B",         "company": "Alibaba",       "color": "bright_yellow"},
-    {"id": "ministral-3:8b-cloud",          "name": "Ministral3-8B",     "company": "Mistral AI",    "color": "bright_blue"},
-    {"id": "phi4-mini",                     "name": "Phi4-Mini",         "company": "Microsoft",     "color": "bright_red"},
+    {"id": "qwen3-next:80b-cloud",          "name": "Qwen3-80B",         "company": "Alibaba",       "color": "brown"},
+    {"id": "ministral-3:14b-cloud",         "name": "Ministral3-14B",    "company": "MistralAI",    "color": "yellow"},
+    {"id": "gemma3:27b-cloud",              "name": "Gemma3-27B",        "company": "Google",        "color": "bright_blue"},
 ]
 
 OLLAMA_URL  = "http://localhost:11434/v1"
@@ -159,9 +159,9 @@ def build_hint_system(player: Player) -> str:
         "IF you suspect you are the intruder, you have to try to blend in by hinting toward "
         "what you think the majority word might be, saying a word which is associable to what you think is others' majority word, hiding your intruder identity.  "
         "Respond in EXACTLY this format:\n"
-        "REASONING: <free space to create your reasoning, to figure out based on others huints (when available) if you may be the intruder>\n"
+        "REASONING: <free space to create your small and brief reasoning, to figure out based on others hints (when available) if you may be the intruder>\n"
         "HINT: <your hint>\n"
-        "Rules: your hint MUST BE ONLY one word, you CANNOT use word already said by other players (also in prevoius rounds), no punctuation, no explanation."
+        "Rules: your hint MUST BE ONLY one word, you CANNOT use word already said by other players (also in prevoius rounds) NEITHER the secret word, no punctuation, no explanation."
     )
 
 def build_hint_user(player: Player, state: GameState) -> str:
@@ -202,7 +202,7 @@ def build_vote_system(player: Player) -> str:
         "Your goal: say ONE single word that is clearly associated with YOUR secret word. "
         "IF you suspect you are the intruder, you have to try to blend in by hinting toward "
         "what you think the majority word might be, saying a word which is associable to what you think is others' majority word, hiding your intruder identity.  "
-        "Rules: respond with ONLY one word, you CANNOT use word already said by other players (also in prevoius rounds), no punctuation, no explanation.\n\n"
+        "Rules: respond with ONLY one word, you CANNOT use word already said by other players (also in prevoius rounds) NEITHER the secret word, no punctuation, no explanation.\n\n"
         "Based on the secret word you received, comparing it with others' hints, try to identify which player you think is the intruder — "
         "the one whose word is different from the majority. "
         "You cannot vote for yourself, so if you think to be the intruder, vote someone else. "
@@ -214,7 +214,7 @@ def build_vote_system(player: Player) -> str:
     )
 
 def build_vote_user(player: Player, state: GameState, alive_players: list[Player]) -> str:
-    lines = [f"Your secret word is: {player.secret_word}"]
+    lines = [f"The secret word you received was: {player.secret_word}"]
 
     # Full history
     for r in range(1, state.current_round + 1):
@@ -228,7 +228,7 @@ def build_vote_user(player: Player, state: GameState, alive_players: list[Player
 
     votable = [p.name for p in alive_players if p.name != player.name]
     lines.append(f"\nYou must vote for one of: {', '.join(votable)} (the other one is you).")
-    lines.append("Remember: REASONING: <reasoning> then VOTE AS INTRUDER: <name>  then  REASON: <one sentence>")
+    lines.append("Remember: REASONING: <small reasoning based on secret word and what other said> then VOTE AS INTRUDER: <name>  then  REASON: <one sentence>")
     return "\n".join(lines)
 
 # ─── PARSE VOTE ───────────────────────────────────────────────────────────────
