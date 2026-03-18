@@ -25,17 +25,17 @@ from rich.text import Text
 # ─── CONFIG ───────────────────────────────────────────────────────────────────
 
 MODELS = [
-    {"id": "llama3.2:1b",   "name": "Llama-1B",   "company": "Meta",      "color": "bright_blue"},
-    {"id": "llama3.2:3b",   "name": "Llama-3B",   "company": "Meta",      "color": "blue"},
-    {"id": "gemma3:1b",     "name": "Gemma-1B",   "company": "Google",    "color": "bright_green"},
-    {"id": "gemma3:4b",     "name": "Gemma-4B",   "company": "Google",    "color": "green"},
-    {"id": "qwen2.5:1.5b",  "name": "Qwen-1.5B",  "company": "Alibaba",   "color": "bright_yellow"},
-    {"id": "phi3:mini",     "name": "Phi3-Mini",  "company": "Microsoft", "color": "bright_magenta"},
-    {"id": "phi4-mini",     "name": "Phi4-Mini",  "company": "Microsoft", "color": "bright_magenta"},
+    {"id": "llama3:8b",                     "name": "Llama3-8B",         "company": "Meta",          "color": "blue"},
+    {"id": "gpt-oss:20b-cloud",             "name": "GPToss-20B",        "company": "OpenAI",        "color": "green"},
+    {"id": "cogito:8b",                     "name": "Cogito-8B",         "company": "Deep Cogito",   "color": "red"},
+    {"id": "gemini-3-flash-preview:cloud",  "name": "Gemini3",           "company": "Google",        "color": "bright_magenta"},
+    {"id": "qwen3-next:80b-cloud",          "name": "Qwen3-80B",         "company": "Alibaba",       "color": "bright_yellow"},
+    {"id": "ministral-3:8b-cloud",          "name": "Ministral3-8B",     "company": "Mistral AI",    "color": "bright_blue"},
+    {"id": "phi4-mini",                     "name": "Phi4-Mini",         "company": "Microsoft",     "color": "bright_red"},
 ]
 
 OLLAMA_URL  = "http://localhost:11434/v1"
-MAX_ROUNDS  = 1
+MAX_ROUNDS  = 3
 
 # ─── LOGGER ───────────────────────────────────────────────────────────────────
 
@@ -158,7 +158,10 @@ def build_hint_system(player: Player) -> str:
         "Your goal: say ONE single word that is clearly associated with YOUR secret word. "
         "IF you suspect you are the intruder, you have to try to blend in by hinting toward "
         "what you think the majority word might be, saying a word which is associable to what you think is others' majority word, hiding your intruder identity.  "
-        "Rules: respond with ONLY one word, you CANNOT use word already said by other players (also in prevoius rounds), no punctuation, no explanation."
+        "Respond in EXACTLY this format:\n"
+        "REASONING: <free space to create your reasoning, to figure out based on others huints (when available) if you may be the intruder>\n"
+        "HINT: <your hint>\n"
+        "Rules: your hint MUST BE ONLY one word, you CANNOT use word already said by other players (also in prevoius rounds), no punctuation, no explanation."
     )
 
 def build_hint_user(player: Player, state: GameState) -> str:
@@ -196,8 +199,7 @@ def build_vote_system(player: Player) -> str:
         "There are two secret words in play: one given to most players (the majority word), "
         "and a different word given to exactly one player (the intruder). "
         "You do NOT know which word (the majority or the intruder ones) you received, so you don't know if you are the intruder. "
-        "Your goal: say ONE single word that is clearly associated with YOUR secret word, "
-        "but is vague enough so that the real intruder cannot identify the majority word and cheat. "
+        "Your goal: say ONE single word that is clearly associated with YOUR secret word. "
         "IF you suspect you are the intruder, you have to try to blend in by hinting toward "
         "what you think the majority word might be, saying a word which is associable to what you think is others' majority word, hiding your intruder identity.  "
         "Rules: respond with ONLY one word, you CANNOT use word already said by other players (also in prevoius rounds), no punctuation, no explanation.\n\n"
@@ -205,6 +207,7 @@ def build_vote_system(player: Player) -> str:
         "the one whose word is different from the majority. "
         "You cannot vote for yourself, so if you think to be the intruder, vote someone else. "
         "Respond in EXACTLY this format:\n"
+        "REASONING: <free space to create your reasoning, one long consecutive sentence>\n"
         "VOTE AS INTRUDER: <player name you think is the intruder>\n"
         "REASON: <one very brief sentence that explains why you think it is the intruder>\n"
         "Nothing else. All players have now given their hint words."
@@ -219,53 +222,61 @@ def build_vote_user(player: Player, state: GameState, alive_players: list[Player
         if round_hints:
             lines.append(f"\nRound {r} hints:")
             for h in round_hints:
-                lines.append(f"  {h.player_name}: {h.word}")
+                lines.append(f"  {h.player_name} said {h.word}")
 
     lines.append(f"\nEliminated so far: {', '.join(state.eliminated) if state.eliminated else 'none'}")
 
     votable = [p.name for p in alive_players if p.name != player.name]
-    lines.append(f"\nYou must vote for one of: {', '.join(votable)}")
-    lines.append("Remember: VOTE AS INTRUDER: <name>  then  REASON: <one sentence>")
+    lines.append(f"\nYou must vote for one of: {', '.join(votable)} (the other one is you).")
+    lines.append("Remember: REASONING: <reasoning> then VOTE AS INTRUDER: <name>  then  REASON: <one sentence>")
     return "\n".join(lines)
 
 # ─── PARSE VOTE ───────────────────────────────────────────────────────────────
 
 def parse_vote(raw: str, valid_names: list[str]) -> tuple[str, str]:
-    """Extract (voted_name, reason) from model output. Best-effort."""
     voted = ""
     reason = ""
 
     for line in raw.splitlines():
-        line = line.strip()
-        if line.upper().startswith("VOTE AS INTRUDER:"):
-            candidate = line[5:].strip()
-            # Find closest match among valid names (case-insensitive)
+        stripped = line.strip()
+        upper = stripped.upper()
+
+        # Priorità alla riga di voto esplicita — ignora REASONING
+        if upper.startswith("VOTE") and ":" in stripped:
+            candidate = stripped.split(":", 1)[1].strip()
             for name in valid_names:
-                if name.lower() in candidate.lower() or candidate.lower() in name.lower():
+                if name.lower() in candidate.lower():
                     voted = name
                     break
-            if not voted:
-                # fallback: pick any name mentioned anywhere
-                for name in valid_names:
-                    if name.lower() in raw.lower():
-                        voted = name
-                        break
-        elif line.upper().startswith("REASON:"):
-            reason = line[7:].strip()
+
+        elif upper.startswith("REASON:") and not upper.startswith("REASONING:"):
+            reason = stripped[7:].strip()
+
+    # Fallback: cerca nome valido solo se il voto non è stato trovato
+    if not voted:
+        for name in valid_names:
+            if name.lower() in raw.lower():
+                voted = name
+                break
 
     if not voted and valid_names:
-        voted = random.choice(valid_names)  # failsafe random vote
+        voted = random.choice(valid_names)
     if not reason:
         reason = "(no reason given)"
 
     return voted, reason
 
 def parse_hint(raw: str) -> str:
-    """Extract a clean single word from model output."""
-    # Take first word, strip punctuation
+    for line in raw.splitlines():
+        stripped = line.strip()
+        if stripped.upper().startswith("HINT:"):
+            word = stripped[5:].strip()
+            word = re.sub(r"[^a-zA-Z'-]", "", word.split()[0]) if word.split() else ""
+            return word if word else raw.split()[0]
+    
+    # Fallback: prima parola della risposta (comportamento precedente)
     word = re.split(r"[\s\n]+", raw.strip())[0]
-    word = re.sub(r"[^a-zA-Z'-]", "", word)
-    return word if word else raw[:20]
+    return re.sub(r"[^a-zA-Z'-]", "", word)
 
 # ─── RICH CONSOLE HELPERS ─────────────────────────────────────────────────────
 
@@ -273,7 +284,7 @@ console = Console()
 
 def header():
     console.print()
-    title = Text("◈ L a r g e  I N T R U D E R  M o d e l s ◈", style="bold white on dark_red", justify="center")
+    title = Text("L a r g e  I N T R U D E R  M o d e l s", style="bold white on dark_red", justify="center")
     console.print(Panel(title, border_style="red", padding=(1, 4)))
     console.print()
 
